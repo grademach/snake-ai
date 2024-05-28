@@ -2,6 +2,8 @@
 
 An AI trainer and player for Snake in Pygame using PyTorch Reinforcement Learning.
 
+`Python version = 3.11`
+
 ## Training
 When training press `F` to speed up the game and `J` to disable rendering (lower computation).
 
