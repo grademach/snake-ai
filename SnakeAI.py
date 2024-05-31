@@ -133,11 +133,9 @@ def train(model_path: str = None):
     best_score = 0
     plot_scores = []
     plot_mean_scores = []
-    helper.plot([0],[0])
-    helper.plot([0],[0])
     game = SnakeGame(ai=True)
     agent = Agent(game.snake.near_space_radius, model_path)
-    update_every_x_games = 10
+    update_every_x_games = 1
     while game.running:
         # Get old state
         old_state = agent.get_state(game)
