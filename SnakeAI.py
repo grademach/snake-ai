@@ -7,7 +7,8 @@ import random
 from collections import deque
 from snake import Snake
 from main import SnakeGame
-from helper import Direction, plot
+from helper import Direction
+import helper
 from model import Linear_QNet, QTrainer
 
 MAX_MEMORY = 100_000
@@ -22,7 +23,7 @@ class GameState:
 
 
 class Agent:
-    def __init__(self, model_path: str = None):
+    def __init__(self, snake_space_radius: int, model_path: str = None):
         self.total_games = 0
         self.model_path = model_path
         self.randomness = 0  # Randomness / Epsilon
@@ -30,7 +31,9 @@ class Agent:
         self.memory = deque(maxlen=MAX_MEMORY)
 
         # Load a model if specified, otherwise create a new one
-        self.model = Linear_QNet(14, 512, 3)
+        snake_space_diameter = (snake_space_radius * 2) + 1
+        snake_space_input_size = np.power(snake_space_diameter, 2) - 1
+        self.model = Linear_QNet(8 + snake_space_input_size, 512, 3)
         if model_path:
             self.model.load_state_dict(torch.load(model_path))
         self.trainer = QTrainer(self.model, LEARNING_RATE, self.discount_rate)
@@ -43,14 +46,7 @@ class Agent:
         """
 
         snake = game.snake
-
-        def offset_head(offset: int):
-            head_x, head_y = snake.position.copy()
-            head_right = [head_x + offset, head_y]
-            head_left = [head_x - offset, head_y]
-            head_up = [head_x, head_y - offset]
-            head_down = [head_x, head_y + offset]
-            return head_up, head_down, head_right, head_left
+        snake_pos = snake.position.copy()
 
         apple_pos = snake.apple_position
 
@@ -60,7 +56,7 @@ class Agent:
         dir_down = snake.direction == Direction.DOWN
 
         def is_danger(direction: str, offset: int, body_only=False) -> bool:
-            head_up, head_down, head_right, head_left = offset_head(offset)
+            head_up, head_down, head_right, head_left = helper.offset_head(snake_pos, offset)
 
             if direction == "ahead":
                 return (
@@ -85,30 +81,6 @@ class Agent:
                 )
 
         state = [
-            # Danger ahead
-            is_danger("ahead", 1),
-            # Body near ahead
-            is_danger("ahead", 2, True) or
-            is_danger("ahead", 3, True) or
-            is_danger("ahead", 4, True) or
-            is_danger("ahead", 5, True),
-
-            # Danger left
-            is_danger("left", 1),
-            # Body near left
-            is_danger("left", 2, True) or
-            is_danger("left", 3, True) or
-            is_danger("left", 4, True) or
-            is_danger("left", 5, True),
-
-            # Danger right
-            is_danger("right", 1),
-            # Body near right
-            is_danger("right", 2, True) or
-            is_danger("right", 3, True) or
-            is_danger("right", 4, True) or
-            is_danger("right", 5, True),
-
             # Current direction
             dir_left,
             dir_right,
@@ -121,6 +93,8 @@ class Agent:
             apple_pos[1] < snake.position[1],  # Apple up
             apple_pos[1] > snake.position[1]  # Apple down
         ]
+
+        state.extend([snake.check_danger(square) for square in snake.near_space])
 
         return np.array(state, dtype=float)
 
@@ -159,9 +133,12 @@ def train(model_path: str = None):
     best_score = 0
     plot_scores = []
     plot_mean_scores = []
-    agent = Agent(model_path)
+    helper.plot([0],[0])
+    helper.plot([0],[0])
     game = SnakeGame(ai=True)
-    while True:
+    agent = Agent(game.snake.near_space_radius, model_path)
+    update_every_x_games = 10
+    while game.running:
         # Get old state
         old_state = agent.get_state(game)
 
@@ -190,7 +167,9 @@ def train(model_path: str = None):
             total_score += score
             plot_scores.append(score)
             plot_mean_scores.append(total_score/agent.total_games)
-            plot(plot_scores, plot_mean_scores)
+            if agent.total_games % update_every_x_games == 0:
+                helper.plot(plot_scores, plot_mean_scores)
+    print(f"\n\nN° Games: {agent.total_games}\nBest: {best_score}\nAverage: {total_score / agent.total_games if agent.total_games > 0 else 0}")
 
 def play(model_path: str):
     total_score = 0
@@ -198,9 +177,9 @@ def play(model_path: str):
     if not os.path.exists(model_path):
         print("Failed to find model at the given path")
         return
-    agent = Agent(model_path)
     game = SnakeGame(ai=True)
-    while True:
+    agent = Agent(game.snake.near_space_radius, model_path)
+    while game.running:
         # Get old state
         old_state = agent.get_state(game)
 
@@ -217,9 +196,11 @@ def play(model_path: str):
 
             if score > best_score:
                 best_score = score
-            print(f"N° Games: {agent.total_games}\nScore: {score}\nBest: {best_score}\nAverage: {total_score/agent.total_games}\n\n")
+    print(f"\n\nN° Games: {agent.total_games}\nBest: {best_score}\nAverage: {total_score / agent.total_games if agent.total_games > 0 else 0}")
+
 
 
 if __name__ == "__main__":
-    train()  # Create new model - Overwrite existing snake.pt
+    # train()  # Create new model - Overwrite existing snake.pt
+    train("models/current-GRID_25.pt")  # current (1100 + 120 + 140 + 1274)
     # play("models/snake 103 (GRID_25).pt")

@@ -14,11 +14,12 @@ def plot(scores, mean_scores):
     plt.ylabel('Score')
     plt.plot(scores)
     plt.plot(mean_scores)
+    plt.xlim(xmin=0)
     plt.ylim(ymin=0)
     plt.text(len(scores)-1, scores[-1], str(scores[-1]))
     plt.text(len(mean_scores)-1, mean_scores[-1], str(mean_scores[-1]))
     plt.show(block=False)
-    plt.pause(.1)
+    plt.pause(.00000001)
 
 class Direction(Enum):
     UP = 1
@@ -51,3 +52,38 @@ def direction_to_vector(direction: Direction) -> list:
             return [1, 0]
         case Direction.NONE:
             return [0, 0]
+
+
+def offset_head(head_position: (int, int), offset: int):
+    head_x, head_y = head_position
+    head_right = [head_x + offset, head_y]
+    head_left = [head_x - offset, head_y]
+    head_up = [head_x, head_y - offset]
+    head_down = [head_x, head_y + offset]
+    return head_up, head_down, head_right, head_left
+
+
+def offset_head_v2(snake, offset: (int, int)):
+    offset_x, offset_y = offset
+    head_x, head_y = snake.position.copy()
+    head_offset = [head_x + offset_x, head_y + offset_y]
+
+    return head_offset
+
+
+def get_near_space(position: (int, int), radius: int):
+    pos_x = position[0] - radius
+    pos_y = position[1] - radius
+    diameter = (radius * 2) + 1
+    space = []
+
+    # positions = [pos_x + i for i in range(diameter)]
+
+    for x in range(diameter):
+        for y in range(diameter):
+            coord = [pos_x + x, pos_y + y]
+            if coord == list(position):
+                continue
+            space.append(coord)
+
+    return space

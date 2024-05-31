@@ -23,6 +23,7 @@ class SnakeGame:
         self.speed_up = False
         self.ai_controlled = ai
         self.snake = None
+        self.running = True
         # Sanity checks
         if WIDTH != HEIGHT:
             print("One or more constants failed sanity checks. Quitting process.")
@@ -47,11 +48,8 @@ class SnakeGame:
             self.reset()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                exit(0)
+                self.running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    pygame.quit()
                 if not self.snake.ai and event.key in self.snake.move_keys:
                     self.snake.set_direction(helper.key_to_direction(event.key))
                 if event.key == pygame.K_f:
@@ -68,6 +66,14 @@ class SnakeGame:
         if self.render:
             self.background.draw()
             self.snake.draw()
+
+            # Visualize snake's space awareness
+            for pos in self.snake.near_space:
+                x = (pos[0] * PIXELS_PER_SQUARE)+PIXELS_PER_SQUARE/2
+                y = (pos[1] * PIXELS_PER_SQUARE)+PIXELS_PER_SQUARE/2
+                rect = pygame.Rect(x - 3, y - 3, 6, 6)
+                pygame.draw.rect(self.screen, (0, 0, 215), rect, 0, 6)
+
             pygame.display.update()
 
         # Cap/Uncap the frame rate
@@ -78,5 +84,6 @@ class SnakeGame:
 
 if __name__ == "__main__":
     game = SnakeGame()
-    while True:
+    while game.running:
         game.tick()
+    pygame.quit()

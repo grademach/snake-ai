@@ -1,17 +1,23 @@
 import pygame
 import numpy as np
-from random import randint
+import helper
 from helper import Direction, direction_to_vector
+from random import randint
 
 
 class Snake:
-    def __init__(self, screen: pygame.SurfaceType, pixels_per_square: int, position=None, start_size=2,
+    def __init__(self, screen: pygame.SurfaceType, pixels_per_square: int, position=None, start_size=3,
                  color=(0, 255, 0), body_color=(0, 200, 90), ai=False, grid_size=None) -> None:
         if position is None:
             position = [0, 0]
+        # AI Related
+        self.ai = ai
+        self.near_space_radius = 3
+        self.near_space = helper.get_near_space(position, self.near_space_radius)
+
+        # Base snake
         self.alive = True
         self.ticks_lived = 0
-        self.ai = ai
         self.position = position
         self.body = [[position[0] - (n + 1), position[1]] for n in range(start_size)]
         self.score = 0
@@ -40,6 +46,7 @@ class Snake:
         """
         reward = 0
         ate_apple = self._move(self.direction)
+        self.near_space = helper.get_near_space(self.position, self.near_space_radius)
         if ate_apple:
             if not self.ai: pygame.mixer.Sound.play(self.eat_apple_sound)
             reward = 10
@@ -142,7 +149,6 @@ class Snake:
             self.alive = False
             self.color = (255, 0, 0)
             self.body_color = (130, 20, 20)
-            print("Game Over!")
 
     def _spawn_apple(self):
         while True:
