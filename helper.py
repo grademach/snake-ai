@@ -63,14 +63,6 @@ def offset_head(head_position: (int, int), offset: int):
     return head_up, head_down, head_right, head_left
 
 
-def offset_head_v2(snake, offset: (int, int)):
-    offset_x, offset_y = offset
-    head_x, head_y = snake.position.copy()
-    head_offset = [head_x + offset_x, head_y + offset_y]
-
-    return head_offset
-
-
 def get_near_space(position: (int, int), radius: int):
     pos_x = position[0] - radius
     pos_y = position[1] - radius
